@@ -37,11 +37,17 @@ describe("StrategyManager", function () {
     await strategyManager.addHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
+    const collectorName = "GET-ALL-FEE";
+    await mockCollector.mock.isCollector.returns(true);
+
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
     await expect(strategyManager.createStrategyGroup(
       "First Strategy",
       [mockIStrategy.address, mockIStrategy1.address],
       harvestStrategy,
-      mockCollector.address)).to.be
+      collectorName)).to.be
       .reverted.revertedWith("There is address that is not a IStrategy");
   });
 
@@ -81,7 +87,12 @@ describe("StrategyManager", function () {
     await mockIStrategy.mock.isStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
+    const collectorName = "GET-ALL-FEE";
+    await mockCollector.mock.isCollector.returns(true);
 
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
     await strategyManager.addFarmStrategy(
       farmStrategy,
       mockIStrategy.address);
@@ -93,12 +104,12 @@ describe("StrategyManager", function () {
       strategyGroupName,
       [farmStrategy],
       harvestStrategy,
-      mockCollector.address);
+      collectorName);
     await expect(strategyManager.createStrategyGroup(
       strategyGroupName,
       [farmStrategy],
       harvestStrategy,
-      mockCollector.address)).to.be
+      collectorName)).to.be
       .reverted.revertedWith("Already exist a strategy with that name");
   });
   it("createStrategyGroup : Should create a StrategyGroup", async function () {
@@ -109,7 +120,12 @@ describe("StrategyManager", function () {
     await mockIStrategy.mock.isStrategy.returns(true);
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
+    const collectorName = "GET-ALL-FEE";
+    await mockCollector.mock.isCollector.returns(true);
 
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
     await strategyManager.addHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
@@ -120,7 +136,7 @@ describe("StrategyManager", function () {
       "First Strategy",
       [farmStrategy],
       harvestStrategy,
-      mockCollector.address);
+      collectorName);
     const [, , , exist] = await strategyManager.strategiesGroup(strategyGroupName);
     expect(exist).to.equal(true);
   });
@@ -186,7 +202,39 @@ describe("StrategyManager", function () {
       .reverted.revertedWith("Already exist a Harvest strategy with that name");
   });
 
-  // expect(await strategyManager.strategiesGroup(strategyGroupName).check()).to.equal(false);
+
+  it("registerCollector : revert if the address is not a ICollector", async function () {
+    await mockCollector.mock.isCollector.returns(false);
+
+    await expect(strategyManager.registerCollector(
+      "GET-ALL-FEE",
+      mockCollector.address)).to.be
+      .reverted.revertedWith("The address is not a ICollector");
+  });
+
+  it("registerCollector : Should add reference to collector", async function () {
+    const collectorName = "GET-ALL-FEE";
+    await mockCollector.mock.isCollector.returns(true);
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
+    const collector = await strategyManager.collectors(collectorName);
+    expect(collector).to.equal(mockCollector.address);
+  });
+
+  it("registerCollector : should revert if exist other collector with the same name", async function () {
+    const collectorName = "GET-ALL-FEE";
+    await mockCollector.mock.isCollector.returns(true);
+
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
+    await expect(strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address)).to.be
+      .reverted.revertedWith("Already exist a Collector with that name");
+  });
+
 });
 
 

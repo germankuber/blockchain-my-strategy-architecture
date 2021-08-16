@@ -60,11 +60,40 @@ contract StrategyManager {
         harvestStrategiesList.push(_harvestStrategyName);
     }
 
+    // function addHarvestStrategy(
+    //     string calldata _harvestStrategyName,
+    //     IHarvestStrategy _strategy
+    // ) external {
+    //     require(
+    //         address(harvestStrategies[_harvestStrategyName]) == address(0),
+    //         "Already exist a Harvest strategy with that name"
+    //     );
+    //     require(
+    //         _strategy.isHarvestStrategy(),
+    //         "The address is not a IHarvestStrategy"
+    //     );
+    //     harvestStrategies[_harvestStrategyName] = _strategy;
+    //     harvestStrategiesList.push(_harvestStrategyName);
+    // }
+
+    function registerCollector(
+        string calldata _collectorName,
+        ICollector _collector
+    ) external {
+        require(
+            address(collectors[_collectorName]) == address(0),
+            "Already exist a Collector with that name"
+        );
+        require(_collector.isCollector(), "The address is not a ICollector");
+        collectors[_collectorName] = _collector;
+        collectorsList.push(_collectorName);
+    }
+
     function createStrategyGroup(
         string calldata _strategyName,
         string[] calldata _farmStrategies,
         string calldata _harvestStrategy,
-        ICollector collector
+        string calldata _collector
     ) external {
         require(
             !strategiesGroup[_strategyName].exist,
@@ -76,14 +105,14 @@ contract StrategyManager {
         );
 
         require(
-            collector.isCollector(),
+            address(collectors[_collector]) != address(0),
             "The address of collector is not a ICollector"
         );
 
         StrategyGroup memory newGroup = StrategyGroup(
             _checkIfAreStrategies(_farmStrategies),
             harvestStrategies[_harvestStrategy],
-            collector,
+            collectors[_collector],
             _createVault(_strategyName),
             true
         );
