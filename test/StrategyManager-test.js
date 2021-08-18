@@ -250,10 +250,10 @@ describe("StrategyManager", function () {
     const collectorName = "GET-ALL-FEE";
 
     await mockIStrategy.mock.isStrategy.returns(true);
-    await mockIStrategy.mock.execute.returns(true);
+    await mockIStrategy.mock.execute.returns(9000);
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
-    
+
     await mockERC20.mock.transferFrom.returns(false);
     await strategyManager.registerCollector(
       collectorName,
@@ -275,19 +275,19 @@ describe("StrategyManager", function () {
     await expect(strategyManager.execute(strategyGroupName,
       mockERC20.address,
       200)).to.be
-      .reverted.revertedWith("We can't execute the transferFrom, check the allowance");
+      .reverted.revertedWith("SafeERC20: ERC20 operation did not succeed");
   });
-  it.only("execute : Should rise event", async function () {
+  it("execute : Should rise event", async function () {
     const strategyGroupName = "First Strategy";
     const farmStrategy = "Curve liquid";
     const harvestStrategy = "GET-ALL-FEE";
     const collectorName = "GET-ALL-FEE";
 
     await mockIStrategy.mock.isStrategy.returns(true);
-    await mockIStrategy.mock.execute.returns(true);
+    await mockIStrategy.mock.execute.returns(9000);
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
-    
+
     await mockERC20.mock.transferFrom.returns(true);
     await strategyManager.registerCollector(
       collectorName,
@@ -298,6 +298,7 @@ describe("StrategyManager", function () {
     await strategyManager.registerFarmStrategy(
       farmStrategy,
       mockIStrategy.address);
+
 
     await strategyManager.createStrategyGroup(
       strategyGroupName,

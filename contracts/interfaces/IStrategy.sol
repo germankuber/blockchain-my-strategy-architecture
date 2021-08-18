@@ -9,5 +9,5 @@ interface IStrategy {
         string calldata _strategyName,
         uint256 _amount,
         IVault _vault
-    ) external returns (bool);
+    ) external returns (uint256);
 }
