@@ -14,7 +14,9 @@ contract StrategyManager {
         uint256 amount,
         address vault
     );
-    using SafeERC20 for IERC20;
+
+    // using SafeERC20 for IERC20;
+
     struct StrategyGroup {
         IStrategy[] strategies;
         IHarvestStrategy harvestStrategy;
@@ -120,11 +122,14 @@ contract StrategyManager {
             "There is not a strategy group with that name"
         );
         StrategyGroup memory group = strategiesGroup[_strategyGroupName];
-        _token.safeTransferFrom(address(this), address(group.vault), _amount);
 
+        require(
+            _token.transferFrom(address(this), address(group.vault), _amount),
+            "We can't execute the transferFrom, check the allowance"
+        );
         for (uint256 i = 0; i < group.strategies.length; i++) {
             IStrategy strategyToExecute = group.strategies[i];
-            strategyToExecute.execute(_strategyGroupName, _amount, group.vault);
+            // strategyToExecute.execute(_strategyGroupName, _amount, group.vault);
             emit ExecuteStrategy(
                 _strategyGroupName,
                 _amount,

@@ -243,8 +243,7 @@ describe("StrategyManager", function () {
       200)).to.be
       .reverted.revertedWith("There is not a strategy group with that name");
   });
-
-  it.only("execute : Should revet if the strategy name does not exist", async function () {
+  it("execute : Should revet if the strategy is not approve to execute transferFrom", async function () {
     const strategyGroupName = "First Strategy";
     const farmStrategy = "Curve liquid";
     const harvestStrategy = "GET-ALL-FEE";
@@ -255,7 +254,7 @@ describe("StrategyManager", function () {
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
     
-    await mockERC20.mock.safeTransferFrom.returns(true);
+    await mockERC20.mock.transferFrom.returns(false);
     await strategyManager.registerCollector(
       collectorName,
       mockCollector.address);
@@ -272,7 +271,41 @@ describe("StrategyManager", function () {
       harvestStrategy,
       collectorName);
     const [, , vault,] = await strategyManager.strategiesGroup(strategyGroupName);
-    console.log(vault);
+
+    await expect(strategyManager.execute(strategyGroupName,
+      mockERC20.address,
+      200)).to.be
+      .reverted.revertedWith("We can't execute the transferFrom, check the allowance");
+  });
+  it.only("execute : Should rise event", async function () {
+    const strategyGroupName = "First Strategy";
+    const farmStrategy = "Curve liquid";
+    const harvestStrategy = "GET-ALL-FEE";
+    const collectorName = "GET-ALL-FEE";
+
+    await mockIStrategy.mock.isStrategy.returns(true);
+    await mockIStrategy.mock.execute.returns(true);
+    await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
+    await mockCollector.mock.isCollector.returns(true);
+    
+    await mockERC20.mock.transferFrom.returns(true);
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
+    await strategyManager.registerHarvestStrategy(
+      harvestStrategy,
+      mockIHarvestStrategy.address);
+    await strategyManager.registerFarmStrategy(
+      farmStrategy,
+      mockIStrategy.address);
+
+    await strategyManager.createStrategyGroup(
+      strategyGroupName,
+      [farmStrategy],
+      harvestStrategy,
+      collectorName);
+    const [, , vault,] = await strategyManager.strategiesGroup(strategyGroupName);
+
 
     await expect(strategyManager.execute(strategyGroupName,
       mockERC20.address,
