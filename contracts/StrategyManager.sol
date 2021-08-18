@@ -4,10 +4,17 @@ import "./interfaces/IStrategy.sol";
 import "./interfaces/ICollector.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHarvestStrategy.sol";
-
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./StrategyGroupVault.sol";
+import "hardhat/console.sol";
 
 contract StrategyManager {
+    event ExecuteStrategy(
+        string strategyGroupName,
+        uint256 amount,
+        address vault
+    );
+    using SafeERC20 for IERC20;
     struct StrategyGroup {
         IStrategy[] strategies;
         IHarvestStrategy harvestStrategy;
@@ -31,7 +38,7 @@ contract StrategyManager {
     mapping(string => ICollector) public collectors;
     string[] collectorsList;
 
-    function addFarmStrategy(
+    function registerFarmStrategy(
         string calldata _farmStrategyName,
         IStrategy _strategy
     ) external {
@@ -44,7 +51,7 @@ contract StrategyManager {
         farmStrategiesList.push(_farmStrategyName);
     }
 
-    function addHarvestStrategy(
+    function registerHarvestStrategy(
         string calldata _harvestStrategyName,
         IHarvestStrategy _strategy
     ) external {
@@ -59,22 +66,6 @@ contract StrategyManager {
         harvestStrategies[_harvestStrategyName] = _strategy;
         harvestStrategiesList.push(_harvestStrategyName);
     }
-
-    // function addHarvestStrategy(
-    //     string calldata _harvestStrategyName,
-    //     IHarvestStrategy _strategy
-    // ) external {
-    //     require(
-    //         address(harvestStrategies[_harvestStrategyName]) == address(0),
-    //         "Already exist a Harvest strategy with that name"
-    //     );
-    //     require(
-    //         _strategy.isHarvestStrategy(),
-    //         "The address is not a IHarvestStrategy"
-    //     );
-    //     harvestStrategies[_harvestStrategyName] = _strategy;
-    //     harvestStrategiesList.push(_harvestStrategyName);
-    // }
 
     function registerCollector(
         string calldata _collectorName,
@@ -117,6 +108,29 @@ contract StrategyManager {
             true
         );
         strategiesGroup[_strategyName] = newGroup;
+    }
+
+    function execute(
+        string calldata _strategyGroupName,
+        IERC20 _token,
+        uint256 _amount
+    ) external {
+        require(
+            strategiesGroup[_strategyGroupName].exist,
+            "There is not a strategy group with that name"
+        );
+        StrategyGroup memory group = strategiesGroup[_strategyGroupName];
+        _token.safeTransferFrom(address(this), address(group.vault), _amount);
+
+        for (uint256 i = 0; i < group.strategies.length; i++) {
+            IStrategy strategyToExecute = group.strategies[i];
+            strategyToExecute.execute(_strategyGroupName, _amount, group.vault);
+            emit ExecuteStrategy(
+                _strategyGroupName,
+                _amount,
+                address(group.vault)
+            );
+        }
     }
 
     function _createVault(string calldata _strategyName)

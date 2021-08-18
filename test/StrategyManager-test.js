@@ -12,6 +12,7 @@ describe("StrategyManager", function () {
   let mockIVault;
   let mockIHarvestStrategy;
   let mockCollector;
+  let mockERC20;
   beforeEach(async () => {
     ({
       mockIStrategy,
@@ -21,7 +22,8 @@ describe("StrategyManager", function () {
       owner,
       addr1,
       addr2,
-      mockCollector
+      mockCollector,
+      mockERC20
     } = await setupTest());
 
     const StrategyManager = await ethers.getContractFactory("StrategyManager");
@@ -34,7 +36,7 @@ describe("StrategyManager", function () {
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
     const harvestStrategy = "GET-ALL-FEE";
-    await strategyManager.addHarvestStrategy(
+    await strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
     const collectorName = "GET-ALL-FEE";
@@ -70,7 +72,7 @@ describe("StrategyManager", function () {
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
 
     const harvestStrategy = "GET-ALL-FEE";
-    await strategyManager.addHarvestStrategy(
+    await strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
     await expect(strategyManager.createStrategyGroup(
@@ -93,10 +95,10 @@ describe("StrategyManager", function () {
     await strategyManager.registerCollector(
       collectorName,
       mockCollector.address);
-    await strategyManager.addFarmStrategy(
+    await strategyManager.registerFarmStrategy(
       farmStrategy,
       mockIStrategy.address);
-    await strategyManager.addHarvestStrategy(
+    await strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
 
@@ -126,10 +128,10 @@ describe("StrategyManager", function () {
     await strategyManager.registerCollector(
       collectorName,
       mockCollector.address);
-    await strategyManager.addHarvestStrategy(
+    await strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
-    await strategyManager.addFarmStrategy(
+    await strategyManager.registerFarmStrategy(
       farmStrategy,
       mockIStrategy.address);
     await strategyManager.createStrategyGroup(
@@ -141,62 +143,62 @@ describe("StrategyManager", function () {
     expect(exist).to.equal(true);
   });
 
-  it("addFarmStrategy : revert if the address is not a IStrategy", async function () {
+  it("registerFarmStrategy : revert if the address is not a IStrategy", async function () {
     await mockIStrategy.mock.isStrategy.returns(false);
-    await expect(strategyManager.addFarmStrategy(
+    await expect(strategyManager.registerFarmStrategy(
       "Curve liquid",
       mockIStrategy.address)).to.be
       .reverted.revertedWith("The address is not a IStrategy");
   });
 
-  it("addFarmStrategy : Should add reference to farmStrategy", async function () {
+  it("registerFarmStrategy : Should add reference to farmStrategy", async function () {
     const farmStrategy = "Curve liquid";
     await mockIStrategy.mock.isStrategy.returns(true);
-    await strategyManager.addFarmStrategy(
+    await strategyManager.registerFarmStrategy(
       "Curve liquid",
       mockIStrategy.address);
     const strategy = await strategyManager.farmStrategies(farmStrategy);
     expect(strategy).to.equal(mockIStrategy.address);
   });
 
-  it("addFarmStrategy : Should add reference to farmStrategy", async function () {
+  it("registerFarmStrategy : Should add reference to farmStrategy", async function () {
     const farmStrategy = "Curve liquid";
     await mockIStrategy.mock.isStrategy.returns(true);
-    await strategyManager.addFarmStrategy(
+    await strategyManager.registerFarmStrategy(
       farmStrategy,
       mockIStrategy.address);
-    await expect(strategyManager.addFarmStrategy(
+    await expect(strategyManager.registerFarmStrategy(
       farmStrategy,
       mockIStrategy.address)).to.be
       .reverted.revertedWith("Already exist a farm strategy with that name");
   });
 
-  it("addHarvestStrategy : revert if the address is not a IHarvestStrategy", async function () {
+  it("registerHarvestStrategy : revert if the address is not a IHarvestStrategy", async function () {
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(false);
-    await expect(strategyManager.addHarvestStrategy(
+    await expect(strategyManager.registerHarvestStrategy(
       "GET-ALL-FEE",
       mockIHarvestStrategy.address)).to.be
       .reverted.revertedWith("The address is not a IHarvestStrategy");
   });
 
-  it("addHarvestStrategy : Should add reference to farmStrategy", async function () {
+  it("registerHarvestStrategy : Should add reference to farmStrategy", async function () {
     const harvestStrategy = "GET-ALL-FEE";
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
-    await strategyManager.addHarvestStrategy(
+    await strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
     const strategy = await strategyManager.harvestStrategies(harvestStrategy);
     expect(strategy).to.equal(mockIHarvestStrategy.address);
   });
 
-  it("addHarvestStrategy : should revert if exist other harvest strategy with the same name", async function () {
+  it("registerHarvestStrategy : should revert if exist other harvest strategy with the same name", async function () {
     const harvestStrategy = "GET-ALL-FEE";
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
 
-    await strategyManager.addHarvestStrategy(
+    await strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address);
-    await expect(strategyManager.addHarvestStrategy(
+    await expect(strategyManager.registerHarvestStrategy(
       harvestStrategy,
       mockIHarvestStrategy.address)).to.be
       .reverted.revertedWith("Already exist a Harvest strategy with that name");
@@ -233,6 +235,49 @@ describe("StrategyManager", function () {
       collectorName,
       mockCollector.address)).to.be
       .reverted.revertedWith("Already exist a Collector with that name");
+  });
+
+  it("execute : Should revet if the strategy name does not exist", async function () {
+    await expect(strategyManager.execute("Strategy group name",
+      mockERC20.address,
+      200)).to.be
+      .reverted.revertedWith("There is not a strategy group with that name");
+  });
+
+  it.only("execute : Should revet if the strategy name does not exist", async function () {
+    const strategyGroupName = "First Strategy";
+    const farmStrategy = "Curve liquid";
+    const harvestStrategy = "GET-ALL-FEE";
+    const collectorName = "GET-ALL-FEE";
+
+    await mockIStrategy.mock.isStrategy.returns(true);
+    await mockIStrategy.mock.execute.returns(true);
+    await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
+    await mockCollector.mock.isCollector.returns(true);
+    
+    await mockERC20.mock.safeTransferFrom.returns(true);
+    await strategyManager.registerCollector(
+      collectorName,
+      mockCollector.address);
+    await strategyManager.registerHarvestStrategy(
+      harvestStrategy,
+      mockIHarvestStrategy.address);
+    await strategyManager.registerFarmStrategy(
+      farmStrategy,
+      mockIStrategy.address);
+
+    await strategyManager.createStrategyGroup(
+      strategyGroupName,
+      [farmStrategy],
+      harvestStrategy,
+      collectorName);
+    const [, , vault,] = await strategyManager.strategiesGroup(strategyGroupName);
+    console.log(vault);
+
+    await expect(strategyManager.execute(strategyGroupName,
+      mockERC20.address,
+      200)).to.emit(strategyManager, 'ExecuteStrategy')
+      .withArgs(strategyGroupName, 200, vault);
   });
 
 });
