@@ -253,8 +253,8 @@ describe("StrategyManager", function () {
     await mockIStrategy.mock.execute.returns(9000);
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
-
     await mockERC20.mock.transferFrom.returns(false);
+
     await strategyManager.registerCollector(
       collectorName,
       mockCollector.address);
@@ -270,7 +270,6 @@ describe("StrategyManager", function () {
       [farmStrategy],
       harvestStrategy,
       collectorName);
-    const [, , vault,] = await strategyManager.strategiesGroup(strategyGroupName);
 
     await expect(strategyManager.execute(strategyGroupName,
       mockERC20.address,
@@ -287,8 +286,8 @@ describe("StrategyManager", function () {
     await mockIStrategy.mock.execute.returns(9000);
     await mockIHarvestStrategy.mock.isHarvestStrategy.returns(true);
     await mockCollector.mock.isCollector.returns(true);
-
     await mockERC20.mock.transferFrom.returns(true);
+
     await strategyManager.registerCollector(
       collectorName,
       mockCollector.address);
@@ -299,14 +298,13 @@ describe("StrategyManager", function () {
       farmStrategy,
       mockIStrategy.address);
 
-
     await strategyManager.createStrategyGroup(
       strategyGroupName,
       [farmStrategy],
       harvestStrategy,
       collectorName);
-    const [, , vault,] = await strategyManager.strategiesGroup(strategyGroupName);
 
+    const [, , vault,] = await strategyManager.strategiesGroup(strategyGroupName);
 
     await expect(strategyManager.execute(strategyGroupName,
       mockERC20.address,

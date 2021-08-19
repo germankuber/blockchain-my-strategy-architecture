@@ -92,6 +92,7 @@ contract StrategyManager {
             !strategiesGroup[_strategyName].exist,
             "Already exist a strategy with that name"
         );
+
         require(
             address(harvestStrategies[_harvestStrategy]) != address(0),
             "There is address that is not a IHarvestStrategy"
@@ -109,6 +110,7 @@ contract StrategyManager {
             _createVault(_strategyName),
             true
         );
+
         strategiesGroup[_strategyName] = newGroup;
     }
 
